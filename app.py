@@ -1,16 +1,27 @@
 from flask import Flask, jsonify, request
+from uuid import uuid4
 
 app = Flask(__name__)
 app.json.ensure_ascii = False
-@app.route("/status", methods=["GET"])
-def check_status():
-    return jsonify({"Shop:": "Đang mở", "Time": "8:00 - 22:00"}), 200
 
-@app.route("/order", methods=["POST"])
-def order():
-    data = request.get_json(silent=True) or {}
-    food = data.get("item", "Mỳ cay 21724 cấp độ")
-    return jsonify({"message": f"Đã nhận đơn: {food}. Vui lòng chờ!"}), 200
+STUDENTS = []
+
+@app.route("/students", methods=["POST"])
+def create_student():
+    body = request.get_json(silent=True) or {}
+    name = body.get("name")
+
+    if not name:
+        return jsonify({"error": "Thuộc tính 'name' là bắt buộc!"}), 400
+
+    student = {
+        "id": str(uuid4()),
+        "name": name,
+        "gpa": body.get("gpa", 0.0)
+    }
+
+    STUDENTS.append(student)
+    return jsonify(student), 201
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000,debug=True )
+    app.run(host="127.0.0.1", port=5000, debug=True)
