@@ -1,0 +1,11 @@
+Flask >= 3
+Data:
+curl -i -X POST http://127.0.0.1:5000/students -H "Content-Type: application/json" -d "{\"name\": \"Trần Văn Cường\", \"gpa\": 3.2}"
+
+curl -i -X POST http://127.0.0.1:5000/students -H "Content-Type: application/json" -d "{\"name\": \"Nguyễn Thị An\", \"gpa\": 3.9}"
+
+curl -i -X POST http://127.0.0.1:5000/students -H "Content-Type: application/json" -d "{\"name\": \"Lê Bảo Bình\", \"gpa\": 3.5}"
+
+query1: curl -i "http://127.0.0.1:5000/students?q=an"
+curl -i "http://127.0.0.1:5000/students?sort=name"
+curl -i "http://127.0.0.1:5000/students?sort=gpa"
