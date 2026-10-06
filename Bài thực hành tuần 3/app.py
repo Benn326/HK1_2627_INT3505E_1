@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify, url_for
 from werkzeug.exceptions import HTTPException
 from error import ApiProblem, problem
+import base64
+import json
 import logging
 
 app = Flask(__name__)
@@ -60,6 +62,68 @@ posts_db = [
     },
 ]
 
+orders_db = [
+    {
+        "id": 1,
+        "customer_id": 101,
+        "total": 250000,
+        "status": "paid"
+    },
+    {
+        "id": 2,
+        "customer_id": 102,
+        "total": 180000,
+        "status": "pending"
+    },
+    {
+        "id": 3,
+        "customer_id": 101,
+        "total": 420000,
+        "status": "shipped"
+    },
+    {
+        "id": 4,
+        "customer_id": 103,
+        "total": 150000,
+        "status": "cancelled"
+    },
+    {
+        "id": 5,
+        "customer_id": 102,
+        "total": 320000,
+        "status": "paid"
+    },
+    {
+        "id": 6,
+        "customer_id": 104,
+        "total": 500000,
+        "status": "paid"
+    },
+    {
+        "id": 7,
+        "customer_id": 103,
+        "total": 275000,
+        "status": "pending"
+    },
+    {
+        "id": 8,
+        "customer_id": 101,
+        "total": 390000,
+        "status": "shipped"
+    },
+    {
+        "id": 9,
+        "customer_id": 105,
+        "total": 125000,
+        "status": "paid"
+    },
+    {
+        "id": 10,
+        "customer_id": 104,
+        "total": 610000,
+        "status": "pending"
+    },
+]
 next_post_id = 3
 
 
@@ -239,7 +303,159 @@ def delete_post(post_id):
 def test_error():
     raise RuntimeError("Database connection failed")
 
+ORDER_STATUSES = {
+    "pending",
+    "paid",
+    "cancelled",
+    "shipped"
+}
 
+ORDER_FIELDS = {
+    "id",
+    "customer_id",
+    "total",
+    "status"
+}
+
+ORDER_SORT_FIELDS = {
+    "id",
+    "customer_id",
+    "total"
+}
+
+
+def encode_cursor(order_id):
+    raw = str(order_id).encode()
+    return base64.urlsafe_b64encode(raw).decode()
+
+
+def decode_cursor(cursor):
+    try:
+        raw = base64.urlsafe_b64decode(cursor.encode()).decode()
+        return int(raw)
+    except Exception:
+        raise ApiProblem(
+            status=400,
+            title="Bad Request",
+            detail="Cursor không hợp lệ",
+            type_path="invalid-cursor"
+        )
+
+
+@app.get("/orders")
+def list_orders():
+    limit = request.args.get("limit", default=10, type=int)
+    cursor = request.args.get("cursor")
+    status = request.args.get("status")
+    customer_id = request.args.get("customer_id", type=int)
+    sort = request.args.get("sort", "id")
+    fields = request.args.get("fields")
+
+    if limit < 1 or limit > 100:
+        raise ApiProblem(
+            status=400,
+            title="Bad Request",
+            detail="'limit' phải nằm trong khoảng 1..100",
+            type_path="validation-error"
+        )
+
+    if status and status not in ORDER_STATUSES:
+        raise ApiProblem(
+            status=400,
+            title="Bad Request",
+            detail="'status' không hợp lệ",
+            type_path="validation-error"
+        )
+
+    reverse = sort.startswith("-")
+    sort_field = sort[1:] if reverse else sort
+
+    if sort_field not in ORDER_SORT_FIELDS:
+        raise ApiProblem(
+            status=400,
+            title="Bad Request",
+            detail="'sort' không hợp lệ",
+            type_path="validation-error"
+        )
+
+    if fields:
+        selected_fields = fields.split(",")
+
+        if any(field not in ORDER_FIELDS for field in selected_fields):
+            raise ApiProblem(
+                status=400,
+                title="Bad Request",
+                detail="'fields' chứa trường không hợp lệ",
+                type_path="validation-error"
+            )
+    else:
+        selected_fields = [
+            "id",
+            "customer_id",
+            "total",
+            "status"
+        ]
+
+    result = orders_db[:]
+
+    if status:
+        result = [
+            order for order in result
+            if order["status"] == status
+        ]
+
+    if customer_id is not None:
+        result = [
+            order for order in result
+            if order["customer_id"] == customer_id
+        ]
+
+    result.sort(
+        key=lambda order: (
+            order[sort_field],
+            order["id"]
+        ),
+        reverse=reverse
+    )
+
+    if cursor:
+        cursor_id = decode_cursor(cursor)
+
+        ids = [order["id"] for order in result]
+
+        if cursor_id not in ids:
+            raise ApiProblem(
+                status=400,
+                title="Bad Request",
+                detail="Cursor không hợp lệ",
+                type_path="invalid-cursor"
+            )
+
+        index = ids.index(cursor_id)
+        result = result[index + 1:]
+
+    page = result[:limit]
+
+    next_cursor = None
+
+    if len(result) > limit:
+        next_cursor = encode_cursor(page[-1]["id"])
+
+    data = []
+
+    for order in page:
+        item = {}
+
+        for field in selected_fields:
+            item[field] = order[field]
+
+        data.append(item)
+
+    return jsonify({
+        "data": data,
+        "limit": limit,
+        "next_cursor": next_cursor
+    }), 200
 if __name__ == "__main__":
     logging.basicConfig(level=logging.ERROR)
-    app.run(debug=False)
+    app.run(debug=True)

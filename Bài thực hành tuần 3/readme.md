@@ -1,3 +1,4 @@
+# Lab_01:
 ## 1. Xác định Resources trong miền nghiệp vụ
 * **users**: Quản lý người dùng, tác giả bài viết và hệ thống theo dõi (follow).
 * **posts**: Quản lý bài viết trên blog (Tài nguyên chính đang được triển khai trong source code).
@@ -26,6 +27,14 @@
 * `/api/v1/tags` [GET, POST] ➔ **Collection**
 * `/api/v1/tags/{tag_id}` [GET, PATCH, DELETE] ➔ **Item**
 * `/api/v1/posts/{post_id}/tags` [GET, PUT] ➔ **Sub-resource** (Gắn/Lấy thẻ của 1 bài viết)
+
+
+
+
+---
+
+# Lab_02:
+
 ## 3. Kiểm thử Error Handler
 
 ### 3.1. Kiểm tra Resource không tồn tại
@@ -181,5 +190,190 @@ Response:
     "instance": "/api/v1/posts",
     "trace_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
     "detail": "'title' không được để trống"
+}
+```
+
+
+---
+
+
+# Lab_03:
+
+
+## 4. Kiểm thử bằng cURL
+
+
+### 4.1. Test lọc theo status
+
+Request:
+
+```bash
+curl "localhost:5000/orders?status=paid"
+```
+
+Result: 
+HTTP 200 OK
+
+Response:
+
+```json 
+{
+    "data": [
+        {
+            "id": 1,
+            "customer_id": 101,
+            "total": 250000,
+            "status": "paid"
+        },
+        {
+            "id": 5,
+            "customer_id": 102,
+            "total": 320000,
+            "status": "paid"
+        },
+        {
+            "id": 6,
+            "customer_id": 104,
+            "total": 500000,
+            "status": "paid"
+        },
+        {
+            "id": 9,
+            "customer_id": 105,
+            "total": 125000,
+            "status": "paid"
+        }
+    ],
+    "limit": 10,
+    "next_cursor": null
+}
+```
+
+### 4.2. Test cursor pagination
+
+Request:
+```bash
+curl "localhost:5000/orders?limit=5"
+```
+
+Result:
+HTTP 200 OK
+
+
+```json
+{
+    "data": [
+        {
+            "id": 1,
+            "customer_id": 101,
+            "total": 250000,
+            "status": "paid"
+        },
+        {
+            "id": 2,
+            "customer_id": 102,
+            "total": 180000,
+            "status": "pending"
+        },
+        {
+            "id": 3,
+            "customer_id": 101,
+            "total": 420000,
+            "status": "shipped"
+        },
+        {
+            "id": 4,
+            "customer_id": 103,
+            "total": 150000,
+            "status": "cancelled"
+        },
+        {
+            "id": 5,
+            "customer_id": 102,
+            "total": 320000,
+            "status": "paid"
+        }
+    ],
+    "limit": 5,
+    "next_cursor": "NQ=="
+}
+```
+
+### 4.3. Test sparse fieldsets
+Request:
+```bash
+curl "localhost:5000/orders?fields=id,total"
+```
+
+Result:
+HTTP 200 OK
+
+```json
+{
+    "data": [
+        {
+            "id": 1,
+            "total": 250000
+        },
+        {
+            "id": 2,
+            "total": 180000
+        },
+        {
+            "id": 3,
+            "total": 420000
+        },
+        {
+            "id": 4,
+            "total": 150000
+        },
+        {
+            "id": 5,
+            "total": 320000
+        },
+        {
+            "id": 6,
+            "total": 500000
+        },
+        {
+            "id": 7,
+            "total": 275000
+        },
+        {
+            "id": 8,
+            "total": 390000
+        },
+        {
+            "id": 9,
+            "total": 125000
+        },
+        {
+            "id": 10,
+            "total": 610000
+        }
+    ],
+    "limit": 10,
+    "next_cursor": null
+}
+```
+
+### 4.4. Test cursor không hợp lệ
+Request:
+```bash
+curl "localhost:5000/orders?cursor=abc"
+```
+
+Result: HTTP 400 Bad Request
+Content-Type: application/problem+json
+
+Response:
+```json
+{
+    "type": "https://api.example.com/probs/invalid-cursor",
+    "title": "Bad Request",
+    "status": 400,
+    "instance": "/orders",
+    "trace_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+    "detail": "Cursor không hợp lệ"
 }
 ```
