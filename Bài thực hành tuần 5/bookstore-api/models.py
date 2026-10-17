@@ -117,6 +117,35 @@ class Order(db.Model):
     __tablename__ = "orders"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    status: Mapped[str] = mapped_column(String(30), default="pending")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     user: Mapped["User"] = relationship(back_populates="orders")
+    items: Mapped[list["OrderItem"]] = relationship(back_populates="order", cascade="all, delete-orphan")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "status": self.status,
+            "created_at": self.created_at.isoformat(),
+            "items": [item.to_dict() for item in self.items]
+        }
+
+
+class OrderItem(db.Model):
+    __tablename__ = "order_items"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"), nullable=False)
+    book_id: Mapped[int] = mapped_column(ForeignKey("books.id"), nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    order: Mapped["Order"] = relationship(back_populates="items")
+    book: Mapped["Book"] = relationship()
+
+    def to_dict(self):
+        return {
+            "book_id": self.book_id,
+            "title": self.book.title if self.book else None,
+            "quantity": self.quantity
+        }
