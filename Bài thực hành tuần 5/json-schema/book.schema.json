@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BookResource",
+  "type": "object",
+  "required": ["title", "isbn", "price_vnd", "category_id", "author_ids"],
+  "properties": {
+    "id": { "type": "integer", "readOnly": true },
+    "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "isbn": { "type": "string", "pattern": "^(97(8|9))?\\d{9}(\\d|X)$" },
+    "price_vnd": { "type": "integer", "minimum": 0 },
+    "stock": { "type": "integer", "minimum": 0, "default": 0 },
+    "category_id": { 
+      "type": "integer",
+      "description": "Mỗi sách chỉ thuộc duy nhất 1 thể loại"
+    },
+    "author_ids": {
+      "type": "array",
+      "items": { "type": "integer" },
+      "minItems": 1,
+      "uniqueItems": true,
+      "description": "Sách có thể có nhiều tác giả"
+    }
+  },
+  "additionalProperties": false
+}
