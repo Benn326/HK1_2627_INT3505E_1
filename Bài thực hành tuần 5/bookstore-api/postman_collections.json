@@ -1,0 +1,185 @@
+{
+  "info": {
+    "name": "Bookstore API - Buổi 5 (Lab 1 & Bài 2)",
+    "_postman_id": "b5a1c2d3-e4f5-4678-9101-112131415161",
+    "description": "Collection kiểm thử Offset/Cursor Pagination, Genre Filter, Multi-key Sort và JSON Schema Validation.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. List Books (Offset + Genre Filter + Multi-key Sort)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Strategy is offset and has pagination info\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.strategy).to.eql(\"offset\");",
+              "    pm.expect(jsonData.pagination).to.have.property(\"total\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/v1/books?strategy=offset&genre=tech&sort=-price_vnd,title&page=1&limit=2",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "v1", "books"],
+          "query": [
+            { "key": "strategy", "value": "offset" },
+            { "key": "genre", "value": "tech" },
+            { "key": "sort", "value": "-price_vnd,title" },
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "2" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "2. List Books (Cursor - Page 1)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Returns next_cursor\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.strategy).to.eql(\"cursor\");",
+              "    pm.expect(jsonData.pagination.next_cursor).to.be.a(\"string\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/v1/books?strategy=cursor&sort=-price_vnd&limit=2",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "v1", "books"],
+          "query": [
+            { "key": "strategy", "value": "cursor" },
+            { "key": "sort", "value": "-price_vnd" },
+            { "key": "limit", "value": "2" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "3. List Books (Cursor - Page 2)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/v1/books?strategy=cursor&sort=-price_vnd&limit=2&cursor=eyJzb3J0IjogIi1wcmljZV92bmQiLCAidmFsdWVzIjogeyJwcmljZV92bmQiOiAzODAwMDAsICJpZCI6IDJ9fQ==",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "v1", "books"],
+          "query": [
+            { "key": "strategy", "value": "cursor" },
+            { "key": "sort", "value": "-price_vnd" },
+            { "key": "limit", "value": "2" },
+            { "key": "cursor", "value": "eyJzb3J0IjogIi1wcmljZV92bmQiLCAidmFsdWVzIjogeyJwcmljZV92bmQiOiAzODAwMDAsICJpZCI6IDJ9fQ==" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "4. Create Book (Valid JSON Schema)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 201 Created\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Microservices Patterns\",\n  \"isbn\": \"978-1617294549\",\n  \"price_vnd\": 420000,\n  \"stock\": 10,\n  \"category_id\": 1,\n  \"author_ids\": [1]\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/v1/books",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "v1", "books"]
+        }
+      }
+    },
+    {
+      "name": "5. Create Book (Invalid Schema - Expect 400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 400 Bad Request\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Invalid Book\",\n  \"price_vnd\": -5000\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/v1/books",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "v1", "books"]
+        }
+      }
+    }
+  ]
+}
