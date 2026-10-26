@@ -1,0 +1,276 @@
+openapi: 3.1.0
+info:
+  title: Social Network API - Auth & Post Services
+  description: |
+    API phục vụ hệ thống mạng xã hội: Xác thực phiên làm việc bằng JWT (Access & Refresh tokens)
+    và truy xuất bài đăng có kiểm tra quyền sở hữu đối tượng chống BOLA.
+  version: 1.0.0
+
+servers:
+  - url: https://api.socialnetwork.vnu.edu.vn/v1
+    description: Production Server
+  - url: http://localhost:5000/api/v1
+    description: Local Development Server
+
+paths:
+  /auth/login:
+    post:
+      summary: Xác thực người dùng và cấp cặp JWT
+      description: |
+        Tiếp nhận thông tin đăng nhập (email và password). Nếu hợp lệ, hệ thống cấp Access Token
+        (thời hạn 15 phút) và Refresh Token (thời hạn 30 ngày) chứa các claims về role và scopes.
+      operationId: loginUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Đăng nhập thành công, trả về cặp token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Malformed JSON hoặc dữ liệu đầu vào không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                badRequest:
+                  value:
+                    error: "bad_request"
+                    message: "Trường 'email' hoặc 'password' không đúng định dạng."
+        '401':
+          description: Thông tin đăng nhập không chính xác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidCredentials:
+                  value:
+                    error: "invalid_credentials"
+                    message: "Email hoặc mật khẩu không chính xác."
+        '429':
+          description: Quá giới hạn thử đăng nhập (Rate limit exceeded)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                tooManyRequests:
+                  value:
+                    error: "rate_limit_exceeded"
+                    message: "Quá nhiều lần thử đăng nhập. Vui lòng thử lại sau 15 phút."
+
+  /auth/refresh:
+    post:
+      summary: Làm mới Access Token bằng Refresh Token
+      description: |
+        Đổi Refresh Token còn hiệu lực lấy một Access Token mới mà không cần người dùng nhập lại mật khẩu.
+      operationId: refreshToken
+      security:
+        - RefreshAuth: []
+      responses:
+        '200':
+          description: Cấp Access Token mới thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshResponse'
+        '401':
+          description: Refresh Token thiếu, không hợp lệ, đã hết hạn hoặc đã bị thu hồi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                tokenExpired:
+                  value:
+                    error: "token_expired"
+                    message: "Refresh token đã hết hạn, vui lòng đăng nhập lại."
+                tokenRevoked:
+                  value:
+                    error: "token_revoked"
+                    message: "Refresh token đã bị đưa vào blocklist/thu hồi."
+
+  /posts/{id}:
+    get:
+      summary: Lấy chi tiết bài viết theo ID
+      description: |
+        Lấy thông tin chi tiết của một bài viết.
+        - Bài viết công khai (is_private=false): Bất kỳ người dùng nào có scope posts:read đều đọc được.
+        - Bài viết riêng tư (is_private=true): Yêu cầu người gọi phải là chủ sở hữu (owner_id == caller_id) hoặc có vai trò admin. Nếu vi phạm sẽ trả về 403 Forbidden (chống BOLA).
+      operationId: getPostById
+      security:
+        - BearerAuth:
+            - posts:read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Định danh duy nhất của bài viết
+          schema:
+            type: integer
+          example: 101
+      responses:
+        '200':
+          description: Truy xuất bài viết thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+        '401':
+          description: Thiếu Access Token hoặc token không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingToken:
+                  value:
+                    error: "unauthorized"
+                    message: "Missing Authorization Header"
+        '403':
+          description: Thiếu scope posts:read hoặc vi phạm kiểm tra sở hữu (BOLA)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                insufficientScope:
+                  value:
+                    error: "insufficient_scope"
+                    message: "Yêu cầu scope 'posts:read' để truy cập tài nguyên này."
+                bolaViolation:
+                  value:
+                    error: "forbidden"
+                    message: "Bạn không có quyền xem bài viết riêng tư này."
+        '404':
+          description: Không tìm thấy bài viết
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notFound:
+                  value:
+                    error: "not_found"
+                    message: "Bài viết với id=101 không tồn tại."
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Access Token dạng JWT mang các claims (sub, roles, scopes).
+        Thời gian sống khuyến nghị: 15 phút.
+    RefreshAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Refresh Token dạng JWT dùng riêng cho endpoint /auth/refresh.
+        Thời gian sống khuyến nghị: 30 ngày.
+
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@vnu.edu.vn
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: "StrongP@ssw0rd!"
+
+    AuthResponse:
+      type: object
+      required:
+        - access_token
+        - refresh_token
+        - token_type
+        - expires_in
+      properties:
+        access_token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        refresh_token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        token_type:
+          type: string
+          example: "Bearer"
+        expires_in:
+          type: integer
+          description: Thời gian hiệu lực của access token (tính bằng giây)
+          example: 900
+
+    RefreshResponse:
+      type: object
+      required:
+        - access_token
+        - token_type
+        - expires_in
+      properties:
+        access_token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        token_type:
+          type: string
+          example: "Bearer"
+        expires_in:
+          type: integer
+          example: 900
+
+    PostResponse:
+      type: object
+      required:
+        - id
+        - owner_id
+        - content
+        - is_private
+        - created_at
+      properties:
+        id:
+          type: integer
+          example: 101
+        owner_id:
+          type: integer
+          example: 42
+        content:
+          type: string
+          example: "Xin chào thế giới! Đây là bài viết đầu tiên trên Social Network."
+        is_private:
+          type: boolean
+          example: false
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-10-27T08:30:00Z"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          example: "unauthorized"
+        message:
+          type: string
+          example: "Mô tả chi tiết lỗi nghiệp vụ hoặc bảo mật"
