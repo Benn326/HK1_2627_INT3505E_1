@@ -12,11 +12,11 @@ USERS_DB = {
 }
 
 ORDERS_DB = {
-    "concattoto@vnu.edu.vn": [
+    "an@vnu.edu.vn": [
         {"order_id": "ORD-001", "total_vnd": 450000, "status": "completed"},
         {"order_id": "ORD-002", "total_vnd": 320000, "status": "processing"}
     ],
-    "hieu@vnu.edu.vn": [
+    "ben@vnu.edu.vn": [
         {"order_id": "ORD-003", "total_vnd": 180000, "status": "shipped"}
     ]
 }
