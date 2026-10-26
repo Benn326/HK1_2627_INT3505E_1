@@ -3,6 +3,7 @@ from flask import Flask, jsonify
 from flask_httpauth import HTTPBasicAuth
 
 app = Flask(__name__)
+app.json.ensure_ascii = False
 auth = HTTPBasicAuth()
 
 USERS_DB = {
