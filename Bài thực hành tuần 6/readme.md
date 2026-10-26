@@ -404,3 +404,235 @@ Connection: close
   "message": "Token này đã bị thu hồi/vô hiệu hóa."
 }
 ```
+
+
+---
+
+# Lab_04:
+## Phân quyền đa lớp (RBAC, Scopes & BOLA Prevention):
+
+### 1. Lấy token cho các người dùng mẫu
+
+#### 1.1. Token cho User A (id=1, role=customer, scopes=[orders:write], sở hữu đơn 101)
+```bash
+curl -i http://localhost:5000/api/auth/token/1
+```
+
+response:
+
+```json
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.3 Python/3.13.9
+Date: Mon, 26 Oct 2026 18:44:10 GMT
+Content-Type: application/json
+Content-Length: 507
+Connection: close
+
+{
+  "roles": [
+    "customer"
+  ],
+  "scopes": [
+    "orders:write"
+  ],
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc5MzA0MDI1MCwianRpIjoiZjc5OTYwZTctM2ExZi00YzJiLTg3OGQtNjRiMjc5MGU2ODQ4IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjEiLCJuYmYiOjE3OTMwNDAyNTAsImNzcmYiOiJkNjdkNzdiMi1hYzFmLTRkNWItOGI5ZS0wMGE2NjE5MWQ5NDQiLCJleHAiOjE3OTMwNDM4NTAsInJvbGVzIjpbImN1c3RvbWVyIl0sInNjb3BlcyI6WyJvcmRlcnM6d3JpdGUiXX0.o35gUBC5NL8BsNd_Xqo4Ko4lGpVIloFticpsDMUoGr8",
+  "user": "userA@vnu.edu.vn"
+}
+```
+
+#### 1.2. Token cho User B (id=2, role=customer, scopes=[orders:write], sở hữu đơn 202)
+```bash
+curl -i http://localhost:5000/api/auth/token/2
+```
+
+response:
+
+```json
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.3 Python/3.13.9
+Date: Mon, 26 Oct 2026 18:44:15 GMT
+Content-Type: application/json
+Content-Length: 507
+Connection: close
+
+{
+  "roles": [
+    "customer"
+  ],
+  "scopes": [
+    "orders:write"
+  ],
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc5MzA0MDI1NSwianRpIjoiMWQ5MjM0ZDQtZTgwMS00ZDQ2LWI2NjItZWZiYjBmY2M2ODA3IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjIiLCJuYmYiOjE3OTMwNDAyNTUsImNzcmYiOiJkZTFkYjE2YS03NzQ5LTQ0N2YtOTJiNS1kYzc3OWNlNjA5N2IiLCJleHAiOjE3OTMwNDM4NTUsInJvbGVzIjpbImN1c3RvbWVyIl0sInNjb3BlcyI6WyJvcmRlcnM6d3JpdGUiXX0.jVX7yHT6ntaNHaP6f-_wmr0PcsYQcziUqcegUqzZG0I",
+  "user": "userB@vnu.edu.vn"
+}
+```
+
+#### 1.3. Token cho Viewer (id=3, role=viewer, scopes=[orders:read])
+```bash
+curl -i http://localhost:5000/api/auth/token/3
+```
+
+response:
+
+```json
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.3 Python/3.13.9
+Date: Mon, 26 Oct 2026 18:44:22 GMT
+Content-Type: application/json
+Content-Length: 501
+Connection: close
+
+{
+  "roles": [
+    "viewer"
+  ],
+  "scopes": [
+    "orders:read"
+  ],
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc5MzA0MDI2MiwianRpIjoiYmVhZjk1OWItMTVjMi00MDZlLThiOWYtMDRkYzAwOTZjODUzIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjMiLCJuYmYiOjE3OTMwNDAyNjIsImNzcmYiOiJiZDBlOTc5Yi1kYzcxLTQ0MDYtOTA1MC1jMGU4ZDAxNGI1MzYiLCJleHAiOjE3OTMwNDM4NjIsInJvbGVzIjpbInZpZXdlciJdLCJzY29wZXMiOlsib3JkZXJzOnJlYWQiXX0.lV_lxyWeQsi4jzIAnaucqz3VbjAr5sKfrgdd_LlfCxo",
+  "user": "viewer@vnu.edu.vn"
+}
+```
+
+#### 1.4. Token cho Admin (id=99, role=admin)
+```bash
+curl -i http://localhost:5000/api/auth/token/99
+```
+
+response:
+
+```json
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.3 Python/3.13.9
+Date: Mon, 26 Oct 2026 18:44:27 GMT
+Content-Type: application/json
+Content-Length: 539
+Connection: close
+
+{
+  "roles": [
+    "admin"
+  ],
+  "scopes": [
+    "orders:write",
+    "orders:read"
+  ],
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc5MzA0MDI2NywianRpIjoiMDdhNmU5MWQtYjZjMy00MTY2LWFjMTEtMjRmODA1MGQ1MWE1IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6Ijk5IiwibmJmIjoxNzkzMDQwMjY3LCJjc3JmIjoiM2E1MTQ5ODMtNmI2OC00MWU0LWEzZmMtMTZjZGQyNWNhNjE3IiwiZXhwIjoxNzkzMDQzODY3LCJyb2xlcyI6WyJhZG1pbiJdLCJzY29wZXMiOlsib3JkZXJzOndyaXRlIiwib3JkZXJzOnJlYWQiXX0.xQFGHTL-6VA8K-KoudyxsHLsSBgl6H3xmtz6qfdriNc",
+  "user": "admin@vnu.edu.vn"
+}
+```
+
+---
+
+### 2. Test Case 1: Thử nghiệm BOLA (User A xóa đơn 202 của User B) (403 Forbidden)
+
+User A có token hợp lệ, role hợp lệ (`customer`), scope hợp lệ (`orders:write`), nhưng không sở hữu đơn 202. Bị chặn tại lớp `user_owns_resource`.
+
+```bash
+curl -i -X DELETE http://localhost:5000/api/orders/202 \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc5MzA0MDI1MCwianRpIjoiZjc5OTYwZTctM2ExZi00YzJiLTg3OGQtNjRiMjc5MGU2ODQ4IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjEiLCJuYmYiOjE3OTMwNDAyNTAsImNzcmYiOiJkNjdkNzdiMi1hYzFmLTRkNWItOGI5ZS0wMGE2NjE5MWQ5NDQiLCJleHAiOjE3OTMwNDM4NTAsInJvbGVzIjpbImN1c3RvbWVyIl0sInNjb3BlcyI6WyJvcmRlcnM6d3JpdGUiXX0.o35gUBC5NL8BsNd_Xqo4Ko4lGpVIloFticpsDMUoGr8"
+```
+
+response:
+
+```json
+HTTP/1.1 403 FORBIDDEN
+Server: Werkzeug/3.1.3 Python/3.13.9
+Date: Mon, 26 Oct 2026 18:44:34 GMT
+Content-Type: application/json
+Content-Length: 134
+Connection: close
+
+{
+  "error": "forbidden",
+  "message": "BOLA Violated: Bạn không có quyền thao tác trên tài nguyên của người khác."
+}
+```
+
+---
+
+### 3. Test Case 2: Kiểm tra Role (Viewer thử xóa đơn hàng) (403 Forbidden)
+
+Tài khoản Viewer chỉ có role `viewer`, không nằm trong danh sách `["customer", "admin"]`. Bị chặn tại lớp `require_roles`.
+
+```bash
+curl -i -X DELETE http://localhost:5000/api/orders/101 \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc5MzA0MDI2MiwianRpIjoiYmVhZjk1OWItMTVjMi00MDZlLThiOWYtMDRkYzAwOTZjODUzIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjMiLCJuYmYiOjE3OTMwNDAyNjIsImNzcmYiOiJiZDBlOTc5Yi1kYzcxLTQ0MDYtOTA1MC1jMGU4ZDAxNGI1MzYiLCJleHAiOjE3OTMwNDM4NjIsInJvbGVzIjpbInZpZXdlciJdLCJzY29wZXMiOlsib3JkZXJzOnJlYWQiXX0.lV_lxyWeQsi4jzIAnaucqz3VbjAr5sKfrgdd_LlfCxo"
+```
+
+response:
+
+```json
+HTTP/1.1 403 FORBIDDEN
+Server: Werkzeug/3.1.3 Python/3.13.9
+Date: Mon, 26 Oct 2026 18:44:42 GMT
+Content-Type: application/json
+Content-Length: 178
+Connection: close
+
+{
+  "error": "forbidden",
+  "message": "Người dùng không có vai trò phù hợp.",
+  "need_one_of": [
+    "customer",
+    "admin"
+  ],
+  "your_roles": [
+    "viewer"
+  ]
+}
+```
+
+---
+
+### 4. Test Case 3: Chủ tài nguyên tự xóa đơn hàng của mình - Hợp lệ (200 OK)
+
+User A xóa đơn hàng 101 do chính mình tạo ra. Vượt qua cả 3 lớp kiểm tra (`require_roles`, `require_scopes`, `user_owns_resource`).
+
+```bash
+curl -i -X DELETE http://localhost:5000/api/orders/101 \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc5MzA0MDI1MCwianRpIjoiZjc5OTYwZTctM2ExZi00YzJiLTg3OGQtNjRiMjc5MGU2ODQ4IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjEiLCJuYmYiOjE3OTMwNDAyNTAsImNzcmYiOiJkNjdkNzdiMi1hYzFmLTRkNWItOGI5ZS0wMGE2NjE5MWQ5NDQiLCJleHAiOjE3OTMwNDM4NTAsInJvbGVzIjpbImN1c3RvbWVyIl0sInNjb3BlcyI6WyJvcmRlcnM6d3JpdGUiXX0.o35gUBC5NL8BsNd_Xqo4Ko4lGpVIloFticpsDMUoGr8"
+```
+
+response:
+
+```json
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.3 Python/3.13.9
+Date: Mon, 26 Oct 2026 18:44:51 GMT
+Content-Type: application/json
+Content-Length: 107
+Connection: close
+
+{
+  "message": "Đơn hàng 101 đã được xóa thành công bởi user_id=1.",
+  "status": "success"
+}
+```
+
+---
+
+### 5. Test Case 4: Admin có quyền ghi đè (Override) xóa đơn của người khác (200 OK)
+
+Admin xóa đơn 202 của User B. Nhánh `is_admin` cho phép vượt qua lớp kiểm tra sở hữu tài nguyên.
+
+```bash
+curl -i -X DELETE http://localhost:5000/api/orders/202 \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc5MzA0MDI2NywianRpIjoiMDdhNmU5MWQtYjZjMy00MTY2LWFjMTEtMjRmODA1MGQ1MWE1IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6Ijk5IiwibmJmIjoxNzkzMDQwMjY3LCJjc3JmIjoiM2E1MTQ5ODMtNmI2OC00MWU0LWEzZmMtMTZjZGQyNWNhNjE3IiwiZXhwIjoxNzkzMDQzODY3LCJyb2xlcyI6WyJhZG1pbiJdLCJzY29wZXMiOlsib3JkZXJzOndyaXRlIiwib3JkZXJzOnJlYWQiXX0.xQFGHTL-6VA8K-KoudyxsHLsSBgl6H3xmtz6qfdriNc"
+```
+
+response:
+
+```json
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.3 Python/3.13.9
+Date: Mon, 26 Oct 2026 18:44:58 GMT
+Content-Type: application/json
+Content-Length: 108
+Connection: close
+
+{
+  "message": "Đơn hàng 202 đã được xóa thành công bởi user_id=99.",
+  "status": "success"
+}
+```
