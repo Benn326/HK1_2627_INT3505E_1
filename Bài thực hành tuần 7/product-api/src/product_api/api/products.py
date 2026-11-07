@@ -2,10 +2,10 @@ from flask import Blueprint, jsonify, request
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError
 
-from ..errors import Conflict, NotFound
+from ..errors import Conflict, NotFound, OutOfStock
 from ..extensions import db
 from ..models import Product
-from ..schemas import ProductIn, ProductOut
+from ..schemas import ProductIn, ProductOut, ReserveIn
 
 products_bp = Blueprint("products", __name__, url_prefix="/api/v1/products")
 
@@ -63,4 +63,23 @@ def get_product(id):
     p = db.session.scalar(stmt)
     if p is None:
         raise NotFound(message="product not found")
+    return jsonify(ProductOut().dump(p)), 200
+
+
+@products_bp.post("/<int:id>/reserve")
+def reserve_product(id):
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        raise ValidationError({"_schema": ["Invalid JSON body"]})
+    body = ReserveIn().load(payload)
+    stmt = db.select(Product).where(
+        Product.id == id, Product.archived.is_(False)
+    )
+    p = db.session.scalar(stmt)
+    if p is None:
+        raise NotFound(message="product not found")
+    if p.qty_in_stock < body["qty"]:
+        raise OutOfStock(message=f"only {p.qty_in_stock} left")
+    p.qty_in_stock -= body["qty"]
+    db.session.commit()
     return jsonify(ProductOut().dump(p)), 200
