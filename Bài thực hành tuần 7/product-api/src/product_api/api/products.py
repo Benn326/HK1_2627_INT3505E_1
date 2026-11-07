@@ -1,9 +1,11 @@
 from flask import Blueprint, jsonify, request
 from marshmallow import ValidationError
+from sqlalchemy.exc import IntegrityError
 
+from ..errors import Conflict, NotFound
 from ..extensions import db
 from ..models import Product
-from ..schemas import ProductOut
+from ..schemas import ProductIn, ProductOut
 
 products_bp = Blueprint("products", __name__, url_prefix="/api/v1/products")
 
@@ -35,3 +37,30 @@ def list_products():
         "size": size,
         "total": total,
     }), 200
+
+
+@products_bp.post("")
+def create_product():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        raise ValidationError({"_schema": ["Invalid JSON body"]})
+    body = ProductIn().load(payload)
+    p = Product(**body)
+    db.session.add(p)
+    try:
+        db.session.commit()
+    except IntegrityError as err:
+        db.session.rollback()
+        raise Conflict(message="sku already exists") from err
+    return jsonify(ProductOut().dump(p)), 201
+
+
+@products_bp.get("/<int:id>")
+def get_product(id):
+    stmt = db.select(Product).where(
+        Product.id == id, Product.archived.is_(False)
+    )
+    p = db.session.scalar(stmt)
+    if p is None:
+        raise NotFound(message="product not found")
+    return jsonify(ProductOut().dump(p)), 200
