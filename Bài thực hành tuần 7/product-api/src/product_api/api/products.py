@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from ..errors import Conflict, NotFound, OutOfStock
 from ..extensions import db
 from ..models import Product
-from ..schemas import ProductIn, ProductOut, ReserveIn
+from ..schemas import ProductIn, ProductOut, ProductPatch, ReserveIn
 
 products_bp = Blueprint("products", __name__, url_prefix="/api/v1/products")
 
@@ -81,5 +81,23 @@ def reserve_product(id):
     if p.qty_in_stock < body["qty"]:
         raise OutOfStock(message=f"only {p.qty_in_stock} left")
     p.qty_in_stock -= body["qty"]
+    db.session.commit()
+    return jsonify(ProductOut().dump(p)), 200
+
+
+@products_bp.patch("/<int:id>")
+def patch_product(id):
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        raise ValidationError({"_schema": ["Invalid JSON body"]})
+    body = ProductPatch().load(payload, partial=True)
+    stmt = db.select(Product).where(
+        Product.id == id, Product.archived.is_(False)
+    )
+    p = db.session.scalar(stmt)
+    if p is None:
+        raise NotFound(message="product not found")
+    for k, v in body.items():
+        setattr(p, k, v)
     db.session.commit()
     return jsonify(ProductOut().dump(p)), 200
