@@ -101,3 +101,16 @@ def patch_product(id):
         setattr(p, k, v)
     db.session.commit()
     return jsonify(ProductOut().dump(p)), 200
+
+
+@products_bp.delete("/<int:id>")
+def delete_product(id):
+    stmt = db.select(Product).where(
+        Product.id == id, Product.archived.is_(False)
+    )
+    p = db.session.scalar(stmt)
+    if p is None:
+        raise NotFound(message="product not found")
+    p.archived = True
+    db.session.commit()
+    return "", 204
