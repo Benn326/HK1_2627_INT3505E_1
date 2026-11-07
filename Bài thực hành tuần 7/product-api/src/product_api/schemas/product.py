@@ -9,7 +9,6 @@ class ProductOut(Schema):
     price_cents = fields.Int()
     qty_in_stock = fields.Int()
     archived = fields.Bool()
-    created_at = fields.DateTime(dump_only=True)
 
 
 class ProductIn(Schema):
