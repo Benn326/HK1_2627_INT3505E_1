@@ -343,3 +343,221 @@ Connection: close
   "error": "validation_error"
 }
 ```
+
+---
+
+## Order & OrderItem API (`/api/v1/orders`)
+
+### 1. Tạo Order chứa nhiều Product (201 Created)
+
+```bash
+curl -i -X POST http://127.0.0.1:5000/api/v1/orders \
+  -H "Content-Type: application/json" \
+  -d '{"items":[{"product_id":1,"quantity":2},{"product_id":2,"quantity":3}]}'
+```
+
+Response:
+
+```json
+HTTP/1.1 201 CREATED
+Server: Werkzeug/3.1.9 Python/3.13.9
+Date: Tue, 10 Nov 2026 09:58:47 GMT
+Content-Type: application/json
+Content-Length: 225
+Connection: close
+
+{
+  "created_at": "2026-11-10T09:58:47",
+  "id": 1,
+  "items": [
+    {
+      "id": 1,
+      "order_id": 1,
+      "product_id": 1,
+      "quantity": 2,
+      "unit_price_cents": 350000
+    },
+    {
+      "id": 2,
+      "order_id": 1,
+      "product_id": 2,
+      "quantity": 3,
+      "unit_price_cents": 150000
+    }
+  ],
+  "status": "pending"
+}
+```
+
+---
+
+### 2. Lấy chi tiết Order và danh sách OrderItem (200 OK)
+
+```bash
+curl -i http://127.0.0.1:5000/api/v1/orders/1
+```
+
+Response:
+
+```json
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.9 Python/3.13.9
+Date: Tue, 10 Nov 2026 09:58:48 GMT
+Content-Type: application/json
+Content-Length: 225
+Connection: close
+
+{
+  "created_at": "2026-11-10T09:58:47",
+  "id": 1,
+  "items": [
+    {
+      "id": 1,
+      "order_id": 1,
+      "product_id": 1,
+      "quantity": 2,
+      "unit_price_cents": 350000
+    },
+    {
+      "id": 2,
+      "order_id": 1,
+      "product_id": 2,
+      "quantity": 3,
+      "unit_price_cents": 150000
+    }
+  ],
+  "status": "pending"
+}
+```
+
+---
+
+### 3. Lấy danh sách Order có phân trang (200 OK)
+
+```bash
+curl -i "http://127.0.0.1:5000/api/v1/orders?page=1&size=20"
+```
+
+Response:
+
+```json
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.9 Python/3.13.9
+Date: Tue, 10 Nov 2026 09:58:48 GMT
+Content-Type: application/json
+Content-Length: 266
+Connection: close
+
+{
+  "items": [
+    {
+      "created_at": "2026-11-10T09:58:47",
+      "id": 1,
+      "items": [
+        {
+          "id": 1,
+          "order_id": 1,
+          "product_id": 1,
+          "quantity": 2,
+          "unit_price_cents": 350000
+        },
+        {
+          "id": 2,
+          "order_id": 1,
+          "product_id": 2,
+          "quantity": 3,
+          "unit_price_cents": 150000
+        }
+      ],
+      "status": "pending"
+    }
+  ],
+  "page": 1,
+  "size": 20,
+  "total": 1
+}
+```
+
+---
+
+### 4. Truy cập Order không tồn tại (404 Not Found)
+
+```bash
+curl -i http://127.0.0.1:5000/api/v1/orders/9999
+```
+
+Response:
+
+```json
+HTTP/1.1 404 NOT FOUND
+Server: Werkzeug/3.1.9 Python/3.13.9
+Date: Tue, 10 Nov 2026 09:58:48 GMT
+Content-Type: application/json
+Content-Length: 49
+Connection: close
+
+{
+  "detail": "order not found",
+  "error": "not_found"
+}
+```
+
+---
+
+### 5. Gửi quantity không hợp lệ (422 Unprocessable Entity)
+
+```bash
+curl -i -X POST http://127.0.0.1:5000/api/v1/orders \
+  -H "Content-Type: application/json" \
+  -d '{"items":[{"product_id":1,"quantity":0}]}'
+```
+
+Response:
+
+```json
+HTTP/1.1 422 UNPROCESSABLE ENTITY
+Server: Werkzeug/3.1.9 Python/3.13.9
+Date: Tue, 10 Nov 2026 09:58:48 GMT
+Content-Type: application/json
+Content-Length: 107
+Connection: close
+
+{
+  "detail": {
+    "items": {
+      "0": {
+        "quantity": [
+          "Must be greater than or equal to 1."
+        ]
+      }
+    }
+  },
+  "error": "validation_error"
+}
+```
+
+---
+
+### 6. Gửi product_id không tồn tại (404 Not Found)
+
+```bash
+curl -i -X POST http://127.0.0.1:5000/api/v1/orders \
+  -H "Content-Type: application/json" \
+  -d '{"items":[{"product_id":1,"quantity":1},{"product_id":9999,"quantity":2}]}'
+```
+
+Response:
+
+```json
+HTTP/1.1 404 NOT FOUND
+Server: Werkzeug/3.1.9 Python/3.13.9
+Date: Tue, 10 Nov 2026 09:58:48 GMT
+Content-Type: application/json
+Content-Length: 56
+Connection: close
+
+{
+  "detail": "product 9999 not found",
+  "error": "not_found"
+}
+```
