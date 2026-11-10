@@ -674,3 +674,31 @@ Connection: close
   "status": "not_ready"
 }
 ```
+
+---
+
+## Kiểm thử tự động với Pytest & Eager Loading
+
+### 1. Cài đặt và chạy bộ kiểm thử
+
+```bash
+python -m pip install -e .
+pytest
+pytest -v
+pytest -q
+```
+
+### 2. Kết quả chạy kiểm thử (`pytest -v`)
+
+```text
+tests/test_orders.py::test_post_create_order_with_multiple_products PASSED [ 12%]
+tests/test_orders.py::test_post_create_order_validation_and_missing_product_atomic PASSED [ 25%]
+tests/test_orders.py::test_get_order_detail_eager_loading_prevents_n_plus_1 PASSED [ 37%]
+tests/test_orders.py::test_list_orders_eager_loading_constant_query_count PASSED [ 50%]
+tests/test_orders.py::test_demonstrate_lazy_vs_eager_loading_query_count PASSED [ 62%]
+tests/test_products.py::test_create_and_get_product PASSED               [ 75%]
+tests/test_products.py::test_create_product_duplicate_sku_returns_409 PASSED [ 87%]
+tests/test_products.py::test_reserve_patch_and_soft_delete_product PASSED [100%]
+
+============================== 8 passed in 0.32s ==============================
+```

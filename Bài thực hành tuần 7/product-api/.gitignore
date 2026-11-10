@@ -12,3 +12,4 @@ env/
 *.db
 *.sqlite3
 instance/
+.pytest_cache/

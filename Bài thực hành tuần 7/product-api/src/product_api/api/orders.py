@@ -20,7 +20,7 @@ def list_orders():
 
     stmt = (
         db.select(Order)
-        .options(selectinload(Order.items))
+        .options(selectinload(Order.items).selectinload(OrderItem.product))
         .order_by(Order.id)
         .offset((page - 1) * size)
         .limit(size)
@@ -39,7 +39,7 @@ def list_orders():
 def get_order(id):
     stmt = (
         db.select(Order)
-        .options(selectinload(Order.items))
+        .options(selectinload(Order.items).selectinload(OrderItem.product))
         .where(Order.id == id)
     )
     order = db.session.scalar(stmt)
@@ -76,6 +76,7 @@ def create_order():
                 product_id=product.id,
                 quantity=item["quantity"],
                 unit_price_cents=product.price_cents,
+                product=product,
             )
         )
 
