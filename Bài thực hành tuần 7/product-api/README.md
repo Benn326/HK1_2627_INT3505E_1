@@ -561,3 +561,37 @@ Connection: close
   "error": "not_found"
 }
 ```
+
+---
+
+## Triển khai với Docker & Docker Compose
+
+### 1. Build và khởi chạy hệ thống (PostgreSQL 16 + Flask API qua Gunicorn)
+
+```bash
+docker compose build
+docker compose up -d
+docker compose ps
+docker compose logs -f api
+```
+
+Khi container `api` khởi chạy:
+1. Chờ `db` (`postgres:16-alpine`) vượt qua `healthcheck` (`pg_isready -U app -d appdb`).
+2. Tự động chạy `flask --app wsgi db upgrade` để áp dụng toàn bộ migration (`products`, `orders`, `order_items`).
+3. Khởi chạy WSGI server `gunicorn --bind 0.0.0.0:5000 'product_api.factory:create_app()'` dưới quyền user không phải root (`app`).
+
+### 2. Kiểm tra hoạt động và lưu trữ bền vững (Named Volume `pgdata`)
+
+```bash
+# Kiểm tra API
+curl -i http://127.0.0.1:5000/api/v1/products
+curl -i -X POST http://127.0.0.1:5000/api/v1/products \
+  -H "Content-Type: application/json" \
+  -d '{"sku":"SP-DOCKER","name":"Docker Product","price_cents":200000,"qty_in_stock":15}'
+curl -i http://127.0.0.1:5000/api/v1/orders
+
+# Kiểm tra dữ liệu vẫn giữ nguyên sau khi khởi động lại container (nhờ named volume pgdata)
+docker compose down
+docker compose up -d
+curl -i http://127.0.0.1:5000/api/v1/products
+```
