@@ -595,3 +595,82 @@ docker compose down
 docker compose up -d
 curl -i http://127.0.0.1:5000/api/v1/products
 ```
+
+---
+
+## Health Check Endpoints (`/healthz` & `/ready`)
+
+### 1. Liveness Probe — `GET /healthz` (200 OK)
+
+Kiểm tra tiến trình Flask còn hoạt động hay không (không phụ thuộc database):
+
+```bash
+curl -i http://127.0.0.1:5000/healthz
+```
+
+Response:
+
+```json
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.9 Python/3.13.9
+Date: Tue, 10 Nov 2026 10:28:54 GMT
+Content-Type: application/json
+Content-Length: 16
+Connection: close
+
+{
+  "status": "ok"
+}
+```
+
+---
+
+### 2. Readiness Probe — `GET /ready` khi Database hoạt động (200 OK)
+
+Thực hiện truy vấn nhẹ `SELECT 1` để kiểm tra kết nối database:
+
+```bash
+curl -i http://127.0.0.1:5000/ready
+```
+
+Response:
+
+```json
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.9 Python/3.13.9
+Date: Tue, 10 Nov 2026 10:28:54 GMT
+Content-Type: application/json
+Content-Length: 35
+Connection: close
+
+{
+  "database": "ok",
+  "status": "ready"
+}
+```
+
+---
+
+### 3. Readiness Probe — `GET /ready` khi Database gặp sự cố (503 Service Unavailable)
+
+Khi database không thể kết nối, `/ready` trả `503` (không lộ thông tin nhạy cảm hay exception nội bộ), trong khi `/healthz` vẫn trả `200 OK`:
+
+```bash
+curl -i http://127.0.0.1:5000/ready
+```
+
+Response:
+
+```json
+HTTP/1.1 503 SERVICE UNAVAILABLE
+Server: Werkzeug/3.1.9 Python/3.13.9
+Date: Tue, 10 Nov 2026 10:28:57 GMT
+Content-Type: application/json
+Content-Length: 48
+Connection: close
+
+{
+  "database": "unavailable",
+  "status": "not_ready"
+}
+```
