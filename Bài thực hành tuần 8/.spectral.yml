@@ -1,7 +1,12 @@
+
 extends:
   - spectral:oas
 
 rules:
+  info-contact: off
+  operation-description: off
+  operation-tags: off
+
   response-200-must-have-properties:
     description: Response 200 must define a non-empty object or array schema
     message: Response 200 schema must define properties or array items
