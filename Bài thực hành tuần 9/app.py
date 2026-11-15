@@ -92,6 +92,22 @@ def create_app(config=None, cfg=None):
         books = query.offset((page - 1) * size).limit(size).all()
         return jsonify([book.to_dict() for book in books])
 
+    @app.get("/books/search")
+    def search_books():
+        raw_year = request.args.get("year")
+        if raw_year is None:
+            return error(400, "VALIDATION_ERROR", "year query parameter is required", [
+                {"field": "year", "message": "Expected an integer."}
+            ])
+        try:
+            year = int(raw_year)
+        except ValueError:
+            return error(400, "VALIDATION_ERROR", "year must be an integer", [
+                {"field": "year", "message": "Expected an integer."}
+            ])
+        books = Book.query.filter_by(year=year).order_by(Book.id).all()
+        return jsonify([book.to_dict() for book in books])
+
     @app.get("/books/<book_id>")
     def get_book(book_id):
         if not book_id.isdecimal() or int(book_id) < 1:

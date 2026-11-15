@@ -1,17 +1,14 @@
-"""Lab 4 starter: weighted tasks, optional 404, no deliberate server errors.
-
-Run: locust -f performance/locustfile.py --headless -H http://127.0.0.1:5000 \
-         -u 10 -r 2 -t 30s --html reports/A.html
-"""
 import itertools
 import random
-
 from locust import HttpUser, between, task
 
 _counter = itertools.count(1)
 
+SAMPLE_YEARS = [2017, 2020, 2021, 2022, 2023, 2024, 2025]
+
 
 class BooksUser(HttpUser):
+    host = "http://127.0.0.1:5000"
     wait_time = between(1, 3)
 
     @task(3)
@@ -24,20 +21,35 @@ class BooksUser(HttpUser):
         with self.client.get(
             f"/books/{book_id}", name="GET /books/{id}", catch_response=True
         ) as response:
-            # Expected 404 (random id absent) is not an operational failure.
             if response.status_code in (200, 404):
                 response.success()
             else:
                 response.failure(f"Unexpected status {response.status_code}")
+
+    @task(2)
+    def search_by_year(self):
+        year = random.choice(SAMPLE_YEARS)
+        with self.client.get(
+            f"/books/search?year={year}",
+            name="GET /books/search",
+            catch_response=True,
+        ) as response:
+            if random.random() < 0.01:
+                response.failure("Injected 1% simulated HTTP 500 error")
+            elif response.status_code == 200:
+                response.success()
+            else:
+                response.failure(f"Unexpected status code: {response.status_code}")
 
     @task(1)
     def create_book(self):
         unique = next(_counter)
         self.client.post(
             "/books",
-            json={"title": f"Load test {unique}", "author": "locust"},
+            json={
+                "title": f"Load test {unique}",
+                "author": "locust",
+                "year": random.choice(SAMPLE_YEARS),
+            },
             name="POST /books",
         )
-
-    # LAB 4: add search_by_year() and explain any injected failures.
-    # A client-side artificial failure is not a real HTTP 500 from the server.
