@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Books API — Lab 03" tests="7" time="0.123">
+  <testsuite name="happy-path / GET /books — initial list" id="c1629267-4911-4732-be9d-96f15294f957" timestamp="2026-11-15T16:34:14.343Z" tests="2" failures="0" errors="0" time="0.035">
+    <testcase name="Status 200 OK" time="0.035" classname="HappyPathGetBooksInitialList"/>
+    <testcase name="Body is an array" time="0.035" classname="HappyPathGetBooksInitialList"/>
+  </testsuite>
+  <testsuite name="happy-path / POST /books — create" id="a41c65fd-6a47-4048-afc7-8e5df5326f1c" timestamp="2026-11-15T16:34:14.343Z" tests="2" failures="0" errors="0" time="0.026">
+    <testcase name="Status 201 Created" time="0.026" classname="HappyPathPostBooksCreate"/>
+    <testcase name="Response has positive id" time="0.026" classname="HappyPathPostBooksCreate"/>
+  </testsuite>
+  <testsuite name="happy-path / GET /books/{id} — read created book" id="6803eef2-300b-4f4c-b10e-bd03aa6bcd38" timestamp="2026-11-15T16:34:14.343Z" tests="2" failures="0" errors="0" time="0.005">
+    <testcase name="Status 200 OK" time="0.005" classname="HappyPathGetBooksIdReadCreatedBook"/>
+    <testcase name="Has expected fields" time="0.005" classname="HappyPathGetBooksIdReadCreatedBook"/>
+  </testsuite>
+  <testsuite name="happy-path / PUT /books/{id} — update" id="45253546-0795-4f09-ab48-0841190f43ff" timestamp="2026-11-15T16:34:14.343Z" tests="2" failures="0" errors="0" time="0.021">
+    <testcase name="Status 200 OK" time="0.021" classname="HappyPathPutBooksIdUpdate"/>
+    <testcase name="Title was updated" time="0.021" classname="HappyPathPutBooksIdUpdate"/>
+  </testsuite>
+  <testsuite name="happy-path / DELETE /books/{id} — delete" id="6f059f5c-e7ef-4a79-8b10-dcba78061e50" timestamp="2026-11-15T16:34:14.343Z" tests="2" failures="0" errors="0" time="0.019">
+    <testcase name="Status 204 No Content" time="0.019" classname="HappyPathDeleteBooksIdDelete"/>
+    <testcase name="Empty body" time="0.019" classname="HappyPathDeleteBooksIdDelete"/>
+  </testsuite>
+  <testsuite name="error-cases / POST /books — missing title (400)" id="03223da7-a600-4891-96fd-55b148602b0a" timestamp="2026-11-15T16:34:14.343Z" tests="3" failures="0" errors="0" time="0.007">
+    <testcase name="Status 400 Bad Request" time="0.007" classname="ErrorCasesPostBooksMissingTitle400"/>
+    <testcase name="Error code is VALIDATION_ERROR" time="0.007" classname="ErrorCasesPostBooksMissingTitle400"/>
+    <testcase name="Errors mention title field" time="0.007" classname="ErrorCasesPostBooksMissingTitle400"/>
+  </testsuite>
+  <testsuite name="error-cases / GET /books/9999 — not found (404)" id="b3f6a8a8-1f4a-4938-a7f0-1215d7204e1d" timestamp="2026-11-15T16:34:14.343Z" tests="2" failures="0" errors="0" time="0.010">
+    <testcase name="Status 404 Not Found" time="0.010" classname="ErrorCasesGetBooks9999NotFound404"/>
+    <testcase name="Error code is NOT_FOUND" time="0.010" classname="ErrorCasesGetBooks9999NotFound404"/>
+  </testsuite>
+</testsuites>
